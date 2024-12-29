@@ -541,4 +541,29 @@ vows
       }
     }
   })
+  .addBatch({
+    "Prototype pollution CVE-2023-26136 Vulnerability": {
+      "when attempting to set a cookie with a malicious domain": {
+        topic: function() {
+          const jar = new tough.CookieJar(undefined, {
+            rejectPublicSuffixes: false
+          });
+          jar.setCookieSync(
+            "ExploitKey=compromise; Domain=__proto__; Path=/maliciouspath",
+            "https://__proto__/attack"
+          );
+          jar.setCookieSync(
+            "SessionToken=ValidSession; Domain=example.com; Path=/securepath",
+            "https://example.com/"
+          );
+          this.callback();
+        },
+        "ensures no prototype pollution occurs": function() {
+          const testObject = {};
+          assert(testObject["/maliciouspath"] === undefined, "Prototype pollution detected");
+          assert(testObject.ExploitKey === undefined, "Prototype pollution via key occurred");
+        }
+      }
+    }
+  })
   .export(module);
